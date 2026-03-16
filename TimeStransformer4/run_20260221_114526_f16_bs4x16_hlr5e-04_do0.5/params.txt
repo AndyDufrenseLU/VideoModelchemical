@@ -1,0 +1,38 @@
+============================================================
+TimeSformer 训练参数
+运行时间: 2026-02-21 11:45:26
+============================================================
+
+【模型架构】
+  img_size: 448
+  patch_size: 16
+  num_frames: 16
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4.0
+  attention_type: divided_space_time
+
+【分类任务】
+  num_classes_gas: 19
+  num_classes_particle: 3
+
+【正则化】
+  dropout: 0.1
+  attention_dropout: 0.1
+  head_dropout: 0.5
+  drop_path_rate: 0.1
+  label_smoothing: 0.1
+  use_class_weights: True
+  weight_decay: 0.05
+
+【训练设置】
+  batch_size: 4
+  grad_accum_steps: 16
+  backbone_lr: 5e-06
+  head_lr: 0.0005
+  num_epochs: 100
+  warmup_epochs: 3
+  patience: 20
+  num_workers: 2
+  effective_batch_size: 64

@@ -33,7 +33,7 @@ class MambaSformerComboConfig:
         self.use_class_weights = False
         self.weight_decay = 1e-3
         self.augment = True
-        self.aug_crop_scale_min = 0.80
+        self.aug_crop_scale_min = 1.00
         self.aug_crop_scale_max = 1.00
         self.aug_hflip_prob = 0.5
         self.aug_affine_prob = 0.4

@@ -298,7 +298,7 @@ def get_combo_dataloader(
     split="train",
     num_workers=4,
     train_ratio=0.75,
-    max_images_per_group=800,
+    max_images_per_group=None,
     augment=True,
     aug_crop_scale_min=0.80,
     aug_crop_scale_max=1.00,

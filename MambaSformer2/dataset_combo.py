@@ -6,6 +6,8 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
+from torchvision.transforms import InterpolationMode
 
 
 class ComboTxtDataset(Dataset):
@@ -19,6 +21,19 @@ class ComboTxtDataset(Dataset):
         split="train",
         split_ratio=0.75,
         max_images_per_group=800,
+        augment=True,
+        aug_crop_scale_min=0.80,
+        aug_crop_scale_max=1.00,
+        aug_hflip_prob=0.5,
+        aug_affine_prob=0.4,
+        aug_degrees=5.0,
+        aug_translate=0.06,
+        aug_brightness=0.20,
+        aug_contrast=0.15,
+        aug_blur_prob=0.2,
+        aug_blur_sigma_min=0.1,
+        aug_blur_sigma_max=1.0,
+        aug_noise_std=0.015,
     ):
         self.num_frames = num_frames
         self.img_size = img_size
@@ -26,6 +41,17 @@ class ComboTxtDataset(Dataset):
         self.split_ratio = split_ratio
         self.max_images_per_group = max_images_per_group
         self.is_train = split == "train"
+        self.augment = augment
+        self.crop_scale = (aug_crop_scale_min, aug_crop_scale_max)
+        self.hflip_prob = aug_hflip_prob
+        self.affine_prob = aug_affine_prob
+        self.aug_degrees = aug_degrees
+        self.aug_translate = aug_translate
+        self.aug_brightness = aug_brightness
+        self.aug_contrast = aug_contrast
+        self.blur_prob = aug_blur_prob
+        self.blur_sigma = (aug_blur_sigma_min, aug_blur_sigma_max)
+        self.noise_std = aug_noise_std
 
         self.cache_dir_square = f"image_cache_{img_size}"
         self.cache_dir_ratio = f"image_cache_{img_size}w"
@@ -169,6 +195,54 @@ class ComboTxtDataset(Dataset):
     def __len__(self):
         return len(self.samples)
 
+    def _apply_train_augmentation(self, frames):
+        """Apply the same random augmentation to every frame in a clip."""
+        i, j, h, w = transforms.RandomResizedCrop.get_params(
+            frames[0], scale=self.crop_scale, ratio=(1.0, 1.0)
+        )
+        frames = [
+            TF.resized_crop(frame, i, j, h, w, (self.img_size, self.img_size), InterpolationMode.BILINEAR)
+            for frame in frames
+        ]
+
+        if torch.rand(1).item() < self.hflip_prob:
+            frames = [TF.hflip(frame) for frame in frames]
+
+        if torch.rand(1).item() < self.affine_prob:
+            angle = (torch.rand(1).item() * 2 - 1) * self.aug_degrees
+            max_dx = self.aug_translate * self.img_size
+            max_dy = self.aug_translate * self.img_size
+            translate = (
+                int(round((torch.rand(1).item() * 2 - 1) * max_dx)),
+                int(round((torch.rand(1).item() * 2 - 1) * max_dy)),
+            )
+            frames = [
+                TF.affine(
+                    frame,
+                    angle=angle,
+                    translate=translate,
+                    scale=1.0,
+                    shear=[0.0, 0.0],
+                    interpolation=InterpolationMode.BILINEAR,
+                )
+                for frame in frames
+            ]
+
+        brightness = 1.0 + (torch.rand(1).item() * 2 - 1) * self.aug_brightness
+        contrast = 1.0 + (torch.rand(1).item() * 2 - 1) * self.aug_contrast
+        frames = [TF.adjust_brightness(frame, brightness) for frame in frames]
+        frames = [TF.adjust_contrast(frame, contrast) for frame in frames]
+
+        if torch.rand(1).item() < self.blur_prob:
+            sigma = self.blur_sigma[0] + torch.rand(1).item() * (self.blur_sigma[1] - self.blur_sigma[0])
+            frames = [TF.gaussian_blur(frame, kernel_size=3, sigma=sigma) for frame in frames]
+
+        if self.noise_std > 0:
+            noise = torch.randn_like(frames[0]) * self.noise_std
+            frames = [(frame + noise).clamp(0, 1) for frame in frames]
+
+        return frames
+
     def __getitem__(self, idx):
         sample = self.samples[idx]
         frames = []
@@ -198,14 +272,10 @@ class ComboTxtDataset(Dataset):
                     print(f"  加载失败 idx={global_idx}: {exc}")
                 frames.append(torch.zeros(3, self.img_size, self.img_size))
 
-        frames = torch.stack(frames, dim=0)
+        if self.is_train and self.augment:
+            frames = self._apply_train_augmentation(frames)
 
-        if self.is_train:
-            if torch.rand(1).item() < 0.5:
-                frames = frames.flip(-1)
-            if torch.rand(1).item() < 0.5:
-                brightness = 0.9 + torch.rand(1).item() * 0.2
-                frames = frames.mul(brightness).clamp(0, 1)
+        frames = torch.stack(frames, dim=0)
 
         for t in range(frames.size(0)):
             frames[t] = self.normalize(frames[t])
@@ -229,6 +299,19 @@ def get_combo_dataloader(
     num_workers=4,
     train_ratio=0.75,
     max_images_per_group=800,
+    augment=True,
+    aug_crop_scale_min=0.80,
+    aug_crop_scale_max=1.00,
+    aug_hflip_prob=0.5,
+    aug_affine_prob=0.4,
+    aug_degrees=5.0,
+    aug_translate=0.06,
+    aug_brightness=0.20,
+    aug_contrast=0.15,
+    aug_blur_prob=0.2,
+    aug_blur_sigma_min=0.1,
+    aug_blur_sigma_max=1.0,
+    aug_noise_std=0.015,
 ):
     dataset = ComboTxtDataset(
         txt_file=txt_file,
@@ -237,6 +320,19 @@ def get_combo_dataloader(
         split=split,
         split_ratio=train_ratio,
         max_images_per_group=max_images_per_group,
+        augment=augment,
+        aug_crop_scale_min=aug_crop_scale_min,
+        aug_crop_scale_max=aug_crop_scale_max,
+        aug_hflip_prob=aug_hflip_prob,
+        aug_affine_prob=aug_affine_prob,
+        aug_degrees=aug_degrees,
+        aug_translate=aug_translate,
+        aug_brightness=aug_brightness,
+        aug_contrast=aug_contrast,
+        aug_blur_prob=aug_blur_prob,
+        aug_blur_sigma_min=aug_blur_sigma_min,
+        aug_blur_sigma_max=aug_blur_sigma_max,
+        aug_noise_std=aug_noise_std,
     )
 
     return DataLoader(

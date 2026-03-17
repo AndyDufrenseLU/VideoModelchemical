@@ -36,15 +36,16 @@ PRESETS = {
         "num_frames": 16,
         "batch_size": 8,
         "grad_accum_steps": 1,
-        "backbone_lr": 3e-5,
-        "mamba_lr": 1e-4,
-        "head_lr": 1e-3,
-        "head_dropout": 0.2,
-        "label_smoothing": 0.05,
-        "weight_decay": 5e-4,
-        "num_epochs": 40,
+        "backbone_lr": 2e-5,
+        "mamba_lr": 8e-5,
+        "head_lr": 8e-4,
+        "head_dropout": 0.3,
+        "label_smoothing": 0.08,
+        "weight_decay": 1e-3,
+        "gas_aux_loss_weight": 0.2,
+        "num_epochs": 80,
         "warmup_epochs": 5,
-        "patience": 6,
+        "patience": 10,
         "val_interval": 1,
         "max_images_per_group": 800,
         "use_checkpoint": True,
@@ -67,6 +68,37 @@ PRESETS = {
         "max_images_per_group": 800,
         "use_checkpoint": True,
         "num_workers": 6,
+    },
+    "route3": {
+        "img_size": 224,
+        "num_frames": 16,
+        "batch_size": 8,
+        "grad_accum_steps": 1,
+        "backbone_lr": 1.5e-5,
+        "mamba_lr": 6e-5,
+        "head_lr": 6e-4,
+        "head_dropout": 0.35,
+        "label_smoothing": 0.10,
+        "weight_decay": 1.2e-3,
+        "gas_aux_loss_weight": 0.15,
+        "num_epochs": 80,
+        "warmup_epochs": 8,
+        "patience": 10,
+        "val_interval": 1,
+        "max_images_per_group": 800,
+        "use_checkpoint": True,
+        "aug_crop_scale_min": 0.78,
+        "aug_crop_scale_max": 1.00,
+        "aug_hflip_prob": 0.5,
+        "aug_affine_prob": 0.45,
+        "aug_degrees": 6.0,
+        "aug_translate": 0.08,
+        "aug_brightness": 0.22,
+        "aug_contrast": 0.18,
+        "aug_blur_prob": 0.25,
+        "aug_blur_sigma_min": 0.1,
+        "aug_blur_sigma_max": 1.2,
+        "aug_noise_std": 0.018,
     },
 }
 
@@ -395,6 +427,19 @@ def main():
         num_workers=config.num_workers,
         train_ratio=config.train_ratio,
         max_images_per_group=config.max_images_per_group,
+        augment=config.augment,
+        aug_crop_scale_min=config.aug_crop_scale_min,
+        aug_crop_scale_max=config.aug_crop_scale_max,
+        aug_hflip_prob=config.aug_hflip_prob,
+        aug_affine_prob=config.aug_affine_prob,
+        aug_degrees=config.aug_degrees,
+        aug_translate=config.aug_translate,
+        aug_brightness=config.aug_brightness,
+        aug_contrast=config.aug_contrast,
+        aug_blur_prob=config.aug_blur_prob,
+        aug_blur_sigma_min=config.aug_blur_sigma_min,
+        aug_blur_sigma_max=config.aug_blur_sigma_max,
+        aug_noise_std=config.aug_noise_std,
     )
     val_loader = get_combo_dataloader(
         txt_file=txt_file,
@@ -405,6 +450,7 @@ def main():
         num_workers=config.num_workers,
         train_ratio=config.train_ratio,
         max_images_per_group=config.max_images_per_group,
+        augment=False,
     )
 
     train_ds = train_loader.dataset
@@ -435,6 +481,13 @@ def main():
     optimizer = build_optimizer(model, config)
     scheduler = build_scheduler(optimizer, config)
     scaler = torch.amp.GradScaler("cuda")
+    aug_summary = (
+        "增强参数: "
+        f"crop={config.aug_crop_scale_min:.2f}-{config.aug_crop_scale_max:.2f}, "
+        f"hflip={config.aug_hflip_prob}, affine={config.aug_affine_prob}, "
+        f"brightness={config.aug_brightness}, contrast={config.aug_contrast}, "
+        f"blur={config.aug_blur_prob}, noise={config.aug_noise_std}"
+    )
 
     print("\nAMP 混合精度已启用")
     print(f"梯度累积: {config.grad_accum_steps}")
@@ -442,6 +495,8 @@ def main():
     print(f"主头损失权重: {config.combo_loss_weight}")
     print(f"Gas辅助损失权重: {config.gas_aux_loss_weight}")
     print()
+
+    print(aug_summary)
 
     best_val_acc = 0.0
     best_epoch = 0

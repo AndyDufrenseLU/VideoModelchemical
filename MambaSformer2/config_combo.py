@@ -28,20 +28,33 @@ class MambaSformerComboConfig:
         # Regularization
         self.dropout = 0.0
         self.attention_dropout = 0.0
-        self.head_dropout = 0.1
-        self.label_smoothing = 0.0
+        self.head_dropout = 0.3
+        self.label_smoothing = 0.08
         self.use_class_weights = False
-        self.weight_decay = 1e-4
+        self.weight_decay = 1e-3
+        self.augment = True
+        self.aug_crop_scale_min = 0.80
+        self.aug_crop_scale_max = 1.00
+        self.aug_hflip_prob = 0.5
+        self.aug_affine_prob = 0.4
+        self.aug_degrees = 5.0
+        self.aug_translate = 0.06
+        self.aug_brightness = 0.20
+        self.aug_contrast = 0.15
+        self.aug_blur_prob = 0.2
+        self.aug_blur_sigma_min = 0.1
+        self.aug_blur_sigma_max = 1.0
+        self.aug_noise_std = 0.015
 
         # Optimization
         self.batch_size = 8
         self.grad_accum_steps = 1
-        self.backbone_lr = 5e-5
-        self.mamba_lr = 1.5e-4
-        self.head_lr = 2e-3
+        self.backbone_lr = 2e-5
+        self.mamba_lr = 8e-5
+        self.head_lr = 8e-4
         self.combo_loss_weight = 1.0
-        self.gas_aux_loss_weight = 0.3
-        self.num_epochs = 60
+        self.gas_aux_loss_weight = 0.2
+        self.num_epochs = 80
         self.warmup_epochs = 5
         self.patience = 10
         self.val_interval = 1

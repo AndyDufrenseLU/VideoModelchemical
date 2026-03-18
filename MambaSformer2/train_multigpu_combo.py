@@ -22,7 +22,6 @@ from mambasformer_combo import (
     load_pretrained_timesformer,
     load_pretrained_vit,
 )
-from train_combo import PRESETS, apply_overrides
 
 
 warnings.filterwarnings("ignore", category=FutureWarning, module="torch.utils.checkpoint")
@@ -33,6 +32,156 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("medium")
+
+PRESETS = {
+    "route1": {
+        "img_size": 224,
+        "num_frames": 16,
+        "batch_size": 8,
+        "grad_accum_steps": 1,
+        "backbone_lr": 2e-5,
+        "mamba_lr": 8e-5,
+        "head_lr": 8e-4,
+        "head_dropout": 0.3,
+        "label_smoothing": 0.08,
+        "weight_decay": 1e-3,
+        "gas_aux_loss_weight": 0.2,
+        "num_epochs": 80,
+        "warmup_epochs": 5,
+        "patience": 10,
+        "val_interval": 1,
+        "max_images_per_group": None,
+        "use_checkpoint": True,
+    },
+    "route2": {
+        "img_size": 320,
+        "num_frames": 16,
+        "batch_size": 4,
+        "grad_accum_steps": 2,
+        "backbone_lr": 3e-5,
+        "mamba_lr": 1e-4,
+        "head_lr": 1e-3,
+        "head_dropout": 0.2,
+        "label_smoothing": 0.05,
+        "weight_decay": 5e-4,
+        "num_epochs": 40,
+        "warmup_epochs": 5,
+        "patience": 6,
+        "val_interval": 1,
+        "max_images_per_group": None,
+        "use_checkpoint": True,
+        "num_workers": 6,
+    },
+    "route3": {
+        "img_size": 224,
+        "num_frames": 16,
+        "batch_size": 8,
+        "grad_accum_steps": 1,
+        "backbone_lr": 1.5e-5,
+        "mamba_lr": 6e-5,
+        "head_lr": 6e-4,
+        "head_dropout": 0.35,
+        "label_smoothing": 0.10,
+        "weight_decay": 1.2e-3,
+        "gas_aux_loss_weight": 0.15,
+        "num_epochs": 80,
+        "warmup_epochs": 8,
+        "patience": 10,
+        "val_interval": 1,
+        "max_images_per_group": None,
+        "use_checkpoint": True,
+        "aug_crop_scale_min": 0.80,
+        "aug_crop_scale_max": 1.00,
+        "aug_hflip_prob": 0.5,
+        "aug_affine_prob": 0.45,
+        "aug_degrees": 6.0,
+        "aug_translate": 0.08,
+        "aug_brightness": 0.22,
+        "aug_contrast": 0.18,
+        "aug_blur_prob": 0.25,
+        "aug_blur_sigma_min": 0.1,
+        "aug_blur_sigma_max": 1.2,
+        "aug_noise_std": 0.018,
+    },
+    "route4": {
+        "img_size": 224,
+        "num_frames": 16,
+        "batch_size": 8,
+        "grad_accum_steps": 1,
+        "backbone_lr": 2.5e-5,
+        "mamba_lr": 9e-5,
+        "head_lr": 9e-4,
+        "head_dropout": 0.25,
+        "label_smoothing": 0.06,
+        "weight_decay": 7e-4,
+        "gas_aux_loss_weight": 0.22,
+        "num_epochs": 80,
+        "warmup_epochs": 6,
+        "patience": 10,
+        "val_interval": 1,
+        "max_images_per_group": None,
+        "use_checkpoint": True,
+        "aug_crop_scale_min": 0.90,
+        "aug_crop_scale_max": 1.00,
+        "aug_hflip_prob": 0.5,
+        "aug_affine_prob": 0.20,
+        "aug_degrees": 3.0,
+        "aug_translate": 0.03,
+        "aug_brightness": 0.12,
+        "aug_contrast": 0.10,
+        "aug_blur_prob": 0.10,
+        "aug_blur_sigma_min": 0.1,
+        "aug_blur_sigma_max": 0.8,
+        "aug_noise_std": 0.008,
+    },
+}
+
+
+def _parse_bool(value):
+    lowered = value.strip().lower()
+    if lowered in {"1", "true", "yes", "y", "on"}:
+        return True
+    if lowered in {"0", "false", "no", "n", "off"}:
+        return False
+    raise ValueError(f"Invalid bool value: {value}")
+
+
+def _cast_override(current_value, raw_value):
+    if current_value is None:
+        lowered = raw_value.lower()
+        if lowered == "none":
+            return None
+        try:
+            return int(raw_value)
+        except ValueError:
+            try:
+                return float(raw_value)
+            except ValueError:
+                return raw_value
+    if isinstance(current_value, bool):
+        return _parse_bool(raw_value)
+    if isinstance(current_value, int):
+        return int(raw_value)
+    if isinstance(current_value, float):
+        return float(raw_value)
+    return raw_value
+
+
+def apply_overrides(config, preset=None, overrides=None):
+    if preset:
+        for key, value in PRESETS[preset].items():
+            setattr(config, key, value)
+
+    for item in overrides or []:
+        if "=" not in item:
+            raise ValueError(f"Override must use key=value syntax: {item}")
+        key, raw_value = item.split("=", 1)
+        if not hasattr(config, key):
+            raise AttributeError(f"Unknown config key: {key}")
+        current_value = getattr(config, key)
+        setattr(config, key, _cast_override(current_value, raw_value))
+
+    return config
 
 
 def setup_ddp():
@@ -63,7 +212,10 @@ def parse_args():
         action="append",
         default=[],
         metavar="KEY=VALUE",
-        help="Override any config field, for example --set batch_size=6 --set use_checkpoint=True",
+        help=(
+            "Override any config field, for example --set batch_size=6 --set use_checkpoint=True. "
+            "Available presets: route1, route2, route3, route4."
+        ),
     )
     return parser.parse_args()
 

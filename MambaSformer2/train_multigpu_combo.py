@@ -185,10 +185,20 @@ def apply_overrides(config, preset=None, overrides=None):
 
 
 def setup_ddp():
-    dist.init_process_group(backend="nccl")
+    required = ["RANK", "WORLD_SIZE", "LOCAL_RANK"]
+    missing = [name for name in required if name not in os.environ]
+    if missing:
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA is unavailable. This script requires at least one GPU.")
+        local_rank = 0
+        torch.cuda.set_device(local_rank)
+        return local_rank, "single"
+
+    backend = "nccl" if dist.is_nccl_available() else "gloo"
+    dist.init_process_group(backend=backend)
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     torch.cuda.set_device(local_rank)
-    return local_rank
+    return local_rank, backend
 
 
 def cleanup_ddp():
@@ -202,6 +212,10 @@ def is_main():
 
 def world_size():
     return dist.get_world_size() if dist.is_initialized() else 1
+
+
+def available_gpu_count():
+    return torch.cuda.device_count() if torch.cuda.is_available() else 0
 
 
 def parse_args():
@@ -239,7 +253,7 @@ class DualLogger:
 
 
 def tune_config_for_ddp(config):
-    if world_size() >= 2:
+    if world_size() >= 2 or available_gpu_count() >= 2:
         config.num_workers = max(config.num_workers, 12)
         if config.img_size <= 224 and config.batch_size <= 8:
             config.use_checkpoint = False
@@ -254,7 +268,7 @@ def create_run_dir(config):
         f"_bs{config.batch_size}x{config.grad_accum_steps}"
         f"_cls{config.num_classes_combo}"
         f"_hlr{config.head_lr:.0e}"
-        f"_{world_size()}gpu"
+        f"_{world_size() if dist.is_initialized() else available_gpu_count()}gpu"
     )
     run_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), run_name)
     os.makedirs(run_dir, exist_ok=True)
@@ -264,7 +278,9 @@ def create_run_dir(config):
 def save_params(config, run_dir, run_name):
     params = config.to_dict()
     params["world_size"] = world_size()
-    params["global_batch_size"] = config.batch_size * config.grad_accum_steps * world_size()
+    params["gpu_count"] = available_gpu_count()
+    params["parallel_mode"] = "ddp" if dist.is_initialized() else ("dataparallel" if available_gpu_count() > 1 else "single")
+    params["global_batch_size"] = config.batch_size * config.grad_accum_steps * (world_size() if dist.is_initialized() else 1)
     txt_path = os.path.join(run_dir, "params.txt")
     with open(txt_path, "w", encoding="utf-8") as f:
         f.write("=" * 60 + "\n")
@@ -343,12 +359,14 @@ def build_loader(config, txt_file, split):
         aug_blur_sigma_max=config.aug_blur_sigma_max,
         aug_noise_std=config.aug_noise_std,
     )
-    sampler = DistributedSampler(dataset, num_replicas=world_size(), rank=dist.get_rank(), shuffle=is_train)
+    sampler = None
+    if dist.is_initialized():
+        sampler = DistributedSampler(dataset, num_replicas=world_size(), rank=dist.get_rank(), shuffle=is_train)
     loader = DataLoader(
         dataset,
         batch_size=config.batch_size,
         sampler=sampler,
-        shuffle=False,
+        shuffle=(is_train and sampler is None),
         num_workers=max(0, config.num_workers),
         pin_memory=True,
         drop_last=is_train,
@@ -360,6 +378,9 @@ def build_loader(config, txt_file, split):
 
 
 def reduce_metrics(loss_sum, correct, total, device):
+    if not dist.is_initialized():
+        total = max(total, 1.0)
+        return loss_sum / total, 100.0 * correct / total
     stats = torch.tensor([loss_sum, correct, total], device=device, dtype=torch.float64)
     dist.all_reduce(stats, op=dist.ReduceOp.SUM)
     total = max(stats[2].item(), 1.0)
@@ -436,9 +457,11 @@ def validate(model, dataloader, criterion_combo, criterion_gas, device, config):
 
 
 def main():
-    local_rank = setup_ddp()
-    device = torch.device(f"cuda:{local_rank}")
     args = parse_args()
+    local_rank, backend = setup_ddp()
+    device = torch.device(f"cuda:{local_rank}")
+    use_ddp = dist.is_initialized()
+    use_dp = (not use_ddp) and available_gpu_count() > 1
     config = tune_config_for_ddp(apply_overrides(MambaSformerComboConfig(), preset=args.preset, overrides=args.set))
 
     run_dir = None
@@ -455,9 +478,10 @@ def main():
         sys.stdout = logger
         sys.stderr = logger
 
-    shared = [run_dir, run_name, params_txt, log_path]
-    dist.broadcast_object_list(shared, src=0)
-    run_dir, run_name, params_txt, log_path = shared
+    if use_ddp:
+        shared = [run_dir, run_name, params_txt, log_path]
+        dist.broadcast_object_list(shared, src=0)
+        run_dir, run_name, params_txt, log_path = shared
 
     if is_main():
         print("=" * 60)
@@ -467,9 +491,12 @@ def main():
         print(f"params:  {params_txt}")
         print(f"log:     {log_path}")
         print(f"preset:  {args.preset}")
+        print(f"backend: {backend}")
+        print(f"parallel_mode: {'ddp' if use_ddp else ('dataparallel' if use_dp else 'single')}")
         print(f"config:  {config}")
         print(f"world_size: {world_size()}")
-        print(f"global_batch_size: {config.batch_size * config.grad_accum_steps * world_size()}")
+        print(f"gpu_count: {available_gpu_count()}")
+        print(f"global_batch_size: {config.batch_size * config.grad_accum_steps * (world_size() if use_ddp else 1)}")
         print()
 
     model = create_mambasformer_combo(config)
@@ -485,8 +512,14 @@ def main():
         model = load_pretrained_vit(model, vit_weights)
 
     model = model.to(device)
-    raw_model = model
-    model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
+    if use_ddp:
+        raw_model = model
+        model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
+    elif use_dp:
+        model = torch.nn.DataParallel(model, device_ids=list(range(available_gpu_count())))
+        raw_model = model.module
+    else:
+        raw_model = model
 
     if is_main():
         print(f"Trainable params: {sum(p.numel() for p in raw_model.parameters() if p.requires_grad):,}")
@@ -522,7 +555,7 @@ def main():
         print(f"train samples: {len(train_ds)}")
         print(f"val samples:   {len(val_ds)}")
         print(f"per_gpu_batch: {config.batch_size}")
-        print(f"global_batch:  {config.batch_size * config.grad_accum_steps * world_size()}")
+        print(f"global_batch:  {config.batch_size * config.grad_accum_steps * (world_size() if use_ddp else 1)}")
         print(f"num_workers:   {config.num_workers}")
         print(f"use_checkpoint:{config.use_checkpoint}")
         print(
@@ -542,7 +575,8 @@ def main():
     total_start = time.time()
 
     for epoch in range(config.num_epochs):
-        train_sampler.set_epoch(epoch)
+        if train_sampler is not None and hasattr(train_sampler, "set_epoch"):
+            train_sampler.set_epoch(epoch)
         epoch_start = time.time()
 
         train_loss, train_acc = train_epoch(
@@ -599,9 +633,12 @@ def main():
                 print("Early stopping triggered.")
                 break
 
-        stop_now = torch.tensor(1 if (is_main() and no_improve >= config.patience) else 0, device=device)
-        dist.broadcast(stop_now, src=0)
-        if stop_now.item():
+        if use_ddp:
+            stop_now = torch.tensor(1 if (is_main() and no_improve >= config.patience) else 0, device=device)
+            dist.broadcast(stop_now, src=0)
+            if stop_now.item():
+                break
+        elif is_main() and no_improve >= config.patience:
             break
 
     if is_main():

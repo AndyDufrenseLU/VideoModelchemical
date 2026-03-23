@@ -1,0 +1,87 @@
+38-class single-head training summary
+run_name: run_combo_20260319_002703_f16_bs8x1_cls38_hlr9e-04
+total_time_hours: 56.71
+best_val_acc: 83.10
+best_epoch: 73
+combo_to_idx: {(0, 0): 0, (0, 10): 1, (0, 11): 2, (0, 12): 3, (0, 14): 4, (0, 2): 5, (0, 4): 6, (0, 5): 7, (0, 7): 8, (0, 8): 9, (1, 0): 10, (1, 10): 11, (1, 11): 12, (1, 12): 13, (1, 14): 14, (1, 2): 15, (1, 4): 16, (1, 5): 17, (1, 7): 18, (1, 8): 19, (2, 0): 20, (2, 9): 21, (2, 10): 22, (2, 11): 23, (2, 12): 24, (2, 13): 25, (2, 14): 26, (2, 15): 27, (2, 16): 28, (2, 17): 29, (2, 18): 30, (2, 1): 31, (2, 2): 32, (2, 3): 33, (2, 4): 34, (2, 5): 35, (2, 6): 36, (2, 8): 37}
+
+001 train_loss=3.0989 train_acc=19.41% val_loss=2.2887 val_acc=37.99%
+002 train_loss=2.3610 train_acc=35.79% val_loss=1.8850 val_acc=49.37%
+003 train_loss=2.1520 train_acc=41.81% val_loss=1.8426 val_acc=50.98%
+004 train_loss=2.0637 train_acc=43.82% val_loss=1.7250 val_acc=52.53%
+005 train_loss=2.0060 train_acc=45.40% val_loss=1.7605 val_acc=52.59%
+006 train_loss=1.9466 train_acc=47.90% val_loss=1.7132 val_acc=55.11%
+007 train_loss=1.8462 train_acc=50.72% val_loss=1.4683 val_acc=65.23%
+008 train_loss=1.7769 train_acc=54.15% val_loss=1.5551 val_acc=59.94%
+009 train_loss=1.7137 train_acc=56.88% val_loss=1.3824 val_acc=65.46%
+010 train_loss=1.6876 train_acc=57.47% val_loss=1.4761 val_acc=62.53%
+011 train_loss=1.6345 train_acc=59.47% val_loss=1.7355 val_acc=55.75%
+012 train_loss=1.5836 train_acc=61.71% val_loss=1.4377 val_acc=65.98%
+013 train_loss=1.5418 train_acc=62.97% val_loss=1.4830 val_acc=63.56%
+014 train_loss=1.4983 train_acc=64.63% val_loss=1.3296 val_acc=68.33%
+015 train_loss=1.4544 train_acc=66.93% val_loss=1.4274 val_acc=66.49%
+016 train_loss=1.4317 train_acc=68.02% val_loss=1.2914 val_acc=72.59%
+017 train_loss=1.3895 train_acc=69.41% val_loss=1.2129 val_acc=75.52%
+018 train_loss=1.3398 train_acc=71.67% val_loss=1.3603 val_acc=71.78%
+019 train_loss=1.3271 train_acc=72.08% val_loss=1.3015 val_acc=71.09%
+020 train_loss=1.2935 train_acc=72.83% val_loss=1.3043 val_acc=73.33%
+021 train_loss=1.2590 train_acc=74.97% val_loss=1.3000 val_acc=74.60%
+022 train_loss=1.2291 train_acc=75.79% val_loss=1.3752 val_acc=71.55%
+023 train_loss=1.1944 train_acc=76.95% val_loss=1.3634 val_acc=71.09%
+024 train_loss=1.1805 train_acc=77.61% val_loss=1.3291 val_acc=74.14%
+025 train_loss=1.1628 train_acc=79.20% val_loss=1.2999 val_acc=73.91%
+026 train_loss=1.1338 train_acc=79.84% val_loss=1.1988 val_acc=77.87%
+027 train_loss=1.1115 train_acc=80.68% val_loss=1.2643 val_acc=75.23%
+028 train_loss=1.0853 train_acc=81.57% val_loss=1.3121 val_acc=75.40%
+029 train_loss=1.0661 train_acc=82.92% val_loss=1.3367 val_acc=73.97%
+030 train_loss=1.0342 train_acc=83.71% val_loss=1.2114 val_acc=78.79%
+031 train_loss=1.0173 train_acc=84.31% val_loss=1.3435 val_acc=74.25%
+032 train_loss=1.0018 train_acc=84.70% val_loss=1.2296 val_acc=78.10%
+033 train_loss=0.9653 train_acc=86.21% val_loss=1.3727 val_acc=75.80%
+034 train_loss=0.9697 train_acc=85.82% val_loss=1.2846 val_acc=77.13%
+035 train_loss=0.9388 train_acc=87.10% val_loss=1.3627 val_acc=76.55%
+036 train_loss=0.9201 train_acc=87.92% val_loss=1.4808 val_acc=74.25%
+037 train_loss=0.9106 train_acc=88.00% val_loss=1.4094 val_acc=74.02%
+038 train_loss=0.8779 train_acc=89.09% val_loss=1.2431 val_acc=79.66%
+039 train_loss=0.8763 train_acc=88.85% val_loss=1.3178 val_acc=77.99%
+040 train_loss=0.8684 train_acc=89.51% val_loss=1.2428 val_acc=79.37%
+041 train_loss=0.8358 train_acc=90.75% val_loss=1.3398 val_acc=77.70%
+042 train_loss=0.8366 train_acc=90.70% val_loss=1.2748 val_acc=78.85%
+043 train_loss=0.8103 train_acc=91.42% val_loss=1.2266 val_acc=80.11%
+044 train_loss=0.7909 train_acc=92.05% val_loss=1.2421 val_acc=79.94%
+045 train_loss=0.7714 train_acc=92.49% val_loss=1.2229 val_acc=79.94%
+046 train_loss=0.7733 train_acc=92.49% val_loss=1.2028 val_acc=81.21%
+047 train_loss=0.7619 train_acc=93.00% val_loss=1.2441 val_acc=79.94%
+048 train_loss=0.7403 train_acc=93.74% val_loss=1.2535 val_acc=80.00%
+049 train_loss=0.7311 train_acc=93.82% val_loss=1.2831 val_acc=79.66%
+050 train_loss=0.7003 train_acc=94.93% val_loss=1.1809 val_acc=81.55%
+051 train_loss=0.7176 train_acc=94.20% val_loss=1.2310 val_acc=80.34%
+052 train_loss=0.6962 train_acc=95.16% val_loss=1.2494 val_acc=79.66%
+053 train_loss=0.6908 train_acc=95.03% val_loss=1.2253 val_acc=80.23%
+054 train_loss=0.6850 train_acc=95.29% val_loss=1.2256 val_acc=80.86%
+055 train_loss=0.6735 train_acc=96.02% val_loss=1.1983 val_acc=80.57%
+056 train_loss=0.6541 train_acc=96.42% val_loss=1.2323 val_acc=80.46%
+057 train_loss=0.6591 train_acc=96.32% val_loss=1.2466 val_acc=80.29%
+058 train_loss=0.6516 train_acc=96.52% val_loss=1.1956 val_acc=81.67%
+059 train_loss=0.6407 train_acc=96.87% val_loss=1.2199 val_acc=81.32%
+060 train_loss=0.6368 train_acc=96.91% val_loss=1.1673 val_acc=82.70%
+061 train_loss=0.6315 train_acc=96.90% val_loss=1.1777 val_acc=81.90%
+062 train_loss=0.6343 train_acc=96.93% val_loss=1.2116 val_acc=81.72%
+063 train_loss=0.6236 train_acc=97.39% val_loss=1.2085 val_acc=81.32%
+064 train_loss=0.6166 train_acc=97.56% val_loss=1.1807 val_acc=82.47%
+065 train_loss=0.6129 train_acc=97.60% val_loss=1.1627 val_acc=82.64%
+066 train_loss=0.6010 train_acc=97.96% val_loss=1.1891 val_acc=82.41%
+067 train_loss=0.6024 train_acc=97.92% val_loss=1.1593 val_acc=82.87%
+068 train_loss=0.6029 train_acc=98.05% val_loss=1.1852 val_acc=81.84%
+069 train_loss=0.6086 train_acc=97.64% val_loss=1.1753 val_acc=82.47%
+070 train_loss=0.5946 train_acc=98.13% val_loss=1.1783 val_acc=82.18%
+071 train_loss=0.6059 train_acc=97.77% val_loss=1.1648 val_acc=82.41%
+072 train_loss=0.5878 train_acc=98.41% val_loss=1.1521 val_acc=82.99%
+073 train_loss=0.5852 train_acc=98.49% val_loss=1.1547 val_acc=83.10%
+074 train_loss=0.5998 train_acc=98.07% val_loss=1.1565 val_acc=83.10%
+075 train_loss=0.5928 train_acc=98.02% val_loss=1.1582 val_acc=82.36%
+076 train_loss=0.5912 train_acc=98.28% val_loss=1.1540 val_acc=82.87%
+077 train_loss=0.5856 train_acc=98.38% val_loss=1.1541 val_acc=82.99%
+078 train_loss=0.5794 train_acc=98.55% val_loss=1.1522 val_acc=82.87%
+079 train_loss=0.5886 train_acc=98.32% val_loss=1.1523 val_acc=82.93%
+080 train_loss=0.5857 train_acc=98.33% val_loss=1.1526 val_acc=82.99%

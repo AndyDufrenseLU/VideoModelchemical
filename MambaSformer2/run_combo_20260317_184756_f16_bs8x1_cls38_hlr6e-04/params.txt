@@ -1,0 +1,57 @@
+============================================================
+MambaSformer 38-class training config
+run_name: run_combo_20260317_184756_f16_bs8x1_cls38_hlr6e-04
+time: 2026-03-17 18:47:56
+============================================================
+
+attention_dropout: 0.0
+aug_affine_prob: 0.45
+aug_blur_prob: 0.25
+aug_blur_sigma_max: 1.2
+aug_blur_sigma_min: 0.1
+aug_brightness: 0.22
+aug_contrast: 0.18
+aug_crop_scale_max: 1.0
+aug_crop_scale_min: 0.8
+aug_degrees: 6.0
+aug_hflip_prob: 0.5
+aug_noise_std: 0.018
+aug_translate: 0.08
+augment: True
+backbone_lr: 1.5e-05
+batch_size: 8
+combo_loss_weight: 1.0
+compile_model: False
+d_conv: 4
+d_state: 8
+data_root: ./data
+depth: 8
+dropout: 0.0
+embed_dim: 768
+gas_aux_loss_weight: 0.15
+grad_accum_steps: 1
+head_dropout: 0.35
+head_lr: 0.0006
+img_size: 224
+label_smoothing: 0.1
+mamba_expand: 1
+mamba_lr: 6e-05
+max_images_per_group: None
+mlp_ratio: 4.0
+num_classes_combo: 38
+num_classes_gas: 19
+num_classes_particle: 3
+num_epochs: 80
+num_frames: 16
+num_heads: 12
+num_workers: 8
+patch_size: 16
+patience: 10
+train_ratio: 0.8
+use_checkpoint: True
+use_class_weights: False
+use_multi_gpu: False
+val_interval: 1
+warmup_epochs: 8
+weight_decay: 0.0012
+effective_batch_size: 8

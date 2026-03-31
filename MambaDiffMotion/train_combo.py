@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import json
 import math
 import os
@@ -52,12 +52,40 @@ PRESETS = {
         "gas_aux_loss_weight": 0.3,
         "num_epochs": 40,
         "warmup_epochs": 5,
-        "patience": 6,
         "val_interval": 1,
         "num_workers": 8,
         "train_ratio": 0.8,
         "max_images_per_group": None,
         "use_checkpoint": True,
+    },
+    "anti_overfit_noaug": {
+        "img_size": 224,
+        "num_frames": 16,
+        "batch_size": 8,
+        "grad_accum_steps": 1,
+        "backbone_lr": 2e-5,
+        "mamba_lr": 7e-5,
+        "head_lr": 5e-4,
+        "dropout": 0.1,
+        "attention_dropout": 0.05,
+        "head_dropout": 0.35,
+        "motion_head_dropout": 0.35,
+        "fusion_dropout": 0.2,
+        "label_smoothing": 0.08,
+        "weight_decay": 1.2e-3,
+        "motion_input_scale": 2.5,
+        "motion_residual_weight": 0.25,
+        "motion_dim": 96,
+        "motion_kernel_size": 3,
+        "combo_loss_weight": 1.0,
+        "gas_aux_loss_weight": 0.25,
+        "num_epochs": 50,
+        "warmup_epochs": 5,
+        "val_interval": 1,
+        "num_workers": 12,
+        "train_ratio": 0.8,
+        "max_images_per_group": None,
+        "use_checkpoint": False,
     },
     "route1": {
         "img_size": 224,
@@ -78,7 +106,6 @@ PRESETS = {
         "motion_kernel_size": 3,
         "num_epochs": 40,
         "warmup_epochs": 5,
-        "patience": 6,
         "val_interval": 1,
         "max_images_per_group": 800,
         "use_checkpoint": True,
@@ -102,7 +129,6 @@ PRESETS = {
         "motion_kernel_size": 3,
         "num_epochs": 40,
         "warmup_epochs": 5,
-        "patience": 6,
         "val_interval": 1,
         "max_images_per_group": 800,
         "use_checkpoint": True,
@@ -159,14 +185,14 @@ def apply_overrides(config, preset=None, overrides=None):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Train 38-class combo model with CLI-configurable hyperparameters.")
+    parser = argparse.ArgumentParser(description="训练 38 类组合分类模型，可通过命令行覆盖超参数。")
     parser.add_argument("--preset", choices=sorted(PRESETS.keys()))
     parser.add_argument(
         "--set",
         action="append",
         default=[],
         metavar="KEY=VALUE",
-        help="Override any config field, for example --set batch_size=8 --set img_size=320",
+        help="覆盖任意配置项，例如 --set batch_size=8 --set img_size=320",
     )
     return parser.parse_args()
 
@@ -208,7 +234,7 @@ def save_params(config, run_dir, run_name):
     txt_path = os.path.join(run_dir, "params.txt")
     with open(txt_path, "w", encoding="utf-8") as f:
         f.write("=" * 60 + "\n")
-        f.write("MambaDiffMotion 38-class training config\n")
+        f.write("MambaDiffMotion 38 类训练配置\n")
         f.write(f"run_name: {run_name}\n")
         f.write(f"time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("=" * 60 + "\n\n")
@@ -224,16 +250,16 @@ def save_params(config, run_dir, run_name):
 
 def gpu_diagnostic():
     print("=" * 60)
-    print("GPU info")
+    print("GPU 信息")
     print("=" * 60)
     if not torch.cuda.is_available():
-        print("CUDA unavailable, falling back to CPU.")
+        print("CUDA 不可用，回退到 CPU。")
         return torch.device("cpu")
 
     device = torch.device("cuda")
     props = torch.cuda.get_device_properties(0)
     print(f"GPU: {torch.cuda.get_device_name(0)}")
-    print(f"VRAM: {props.total_memory / 1024**3:.1f} GB")
+    print(f"显存: {props.total_memory / 1024**3:.1f} GB")
     print(f"PyTorch: {torch.__version__}")
     print(f"CUDA: {torch.version.cuda}")
     print()
@@ -276,10 +302,10 @@ def build_optimizer(model, config):
         weight_decay=config.weight_decay,
     )
 
-    print("\nParameter groups:")
-    print(f"  Backbone: {config.backbone_lr} ({sum(p.numel() for p in backbone_params):,} params)")
-    print(f"  Mamba:    {config.mamba_lr} ({sum(p.numel() for p in mamba_params):,} params)")
-    print(f"  Head:     {config.head_lr} ({sum(p.numel() for p in head_params):,} params)")
+    print("\n参数分组:")
+    print(f"  主干网络: {config.backbone_lr} ({sum(p.numel() for p in backbone_params):,} 个参数)")
+    print(f"  Mamba:    {config.mamba_lr} ({sum(p.numel() for p in mamba_params):,} 个参数)")
+    print(f"  任务头:   {config.head_lr} ({sum(p.numel() for p in head_params):,} 个参数)")
     return optimizer
 
 
@@ -317,8 +343,8 @@ def train_epoch(model, dataloader, criterion_combo, criterion_gas, optimizer, de
             loss_combo = criterion_combo(combo_logits, label_combo)
             loss_gas = criterion_gas(gas_logits, label_gas)
             loss = (
-                config.combo_loss_weight * loss_combo +
-                config.gas_aux_loss_weight * loss_gas
+                config.combo_loss_weight * loss_combo
+                + config.gas_aux_loss_weight * loss_gas
             ) / config.grad_accum_steps
 
         scaler.scale(loss).backward()
@@ -365,11 +391,12 @@ def validate(model, dataloader, criterion_combo, criterion_gas, device, config):
             diff_frames = inputs["diff_frames"].to(device, non_blocking=True)
             label_combo = labels["combo"].to(device, non_blocking=True)
             label_gas = labels["gas"].to(device, non_blocking=True)
+
             with torch.amp.autocast("cuda"):
                 combo_logits, gas_logits = model(frames, diff_frames)
                 loss = (
-                    config.combo_loss_weight * criterion_combo(combo_logits, label_combo) +
-                    config.gas_aux_loss_weight * criterion_gas(gas_logits, label_gas)
+                    config.combo_loss_weight * criterion_combo(combo_logits, label_combo)
+                    + config.gas_aux_loss_weight * criterion_gas(gas_logits, label_gas)
                 )
 
             preds = combo_logits.argmax(1)
@@ -394,56 +421,58 @@ def main():
     sys.stderr = logger
 
     print("=" * 60)
-    print("MambaDiffMotion 38-class dual-branch training")
+    print("MambaDiffMotion 38 类双分支训练")
     print("=" * 60)
-    print(f"run_dir: {run_dir}")
-    print(f"params:  {params_txt}")
-    print(f"log:     {log_path}")
-    print(f"config:  {config}")
+    print(f"运行目录: {run_dir}")
+    print(f"参数文件: {params_txt}")
+    print(f"日志文件: {log_path}")
+    print(f"配置:     {config}")
     print()
 
     device = gpu_diagnostic()
     gpu_count = torch.cuda.device_count() if torch.cuda.is_available() else 0
 
-    print("Creating model...")
+    print("正在创建模型...")
     model = create_mambasformer_combo(config)
 
     ts_weights = "TimeSformer_divST_8x32_224_K400.pyth"
     fallback_ts_weights = "TimeSformer_divST_16x16_448_K400.pyth"
     vit_weights = "vit_b_16-c867db91.pth"
+
     if os.path.exists(ts_weights):
-        print(f"Loading pretrained TimeSformer weights: {ts_weights}")
+        print(f"加载预训练 TimeSformer 权重: {ts_weights}")
         model = load_pretrained_timesformer(model, ts_weights, config)
     elif os.path.exists(fallback_ts_weights):
-        print(f"Loading fallback TimeSformer weights: {fallback_ts_weights}")
+        print(f"加载备用 TimeSformer 权重: {fallback_ts_weights}")
         model = load_pretrained_timesformer(model, fallback_ts_weights, config)
     elif os.path.exists(vit_weights):
-        print(f"Loading pretrained ViT-B/16 weights: {vit_weights}")
+        print(f"加载预训练 ViT-B/16 权重: {vit_weights}")
         model = load_pretrained_vit(model, vit_weights)
     else:
-        print("No pretrained weights found, using random initialization.")
+        print("未找到预训练权重，使用随机初始化。")
 
     model = model.to(device)
     raw_model = model
+
     if config.use_multi_gpu and gpu_count > 1:
         model = nn.DataParallel(model, device_ids=list(range(gpu_count)))
-        print(f"Using DataParallel on {gpu_count} GPUs")
+        print(f"使用 DataParallel，GPU 数量: {gpu_count}")
 
-    print(f"Trainable params: {sum(p.numel() for p in raw_model.parameters() if p.requires_grad):,}")
-    print(f"Main head classes: {config.num_classes_combo}")
-    print(f"Aux gas classes:   {config.num_classes_gas}")
-    print("Architecture: heavy appearance backbone + lightweight diff-motion stem + gated fusion")
+    print(f"可训练参数量: {sum(p.numel() for p in raw_model.parameters() if p.requires_grad):,}")
+    print(f"主头类别数: {config.num_classes_combo}")
+    print(f"Gas辅助头类别数: {config.num_classes_gas}")
+    print("模型结构: 重型外观主干 + 轻量差分运动分支 + 门控融合")
     print()
 
     txt_file = "alltrain_with_c.txt"
     if not os.path.exists(txt_file):
-        print(f"Missing dataset index file: {txt_file}")
+        print(f"缺少数据索引文件: {txt_file}")
         sys.stdout = logger.terminal
         sys.stderr = logger.terminal
         logger.close()
         return
 
-    print("Loading data...")
+    print("正在加载数据...")
     train_loader = get_combo_dataloader(
         txt_file=txt_file,
         num_frames=config.num_frames,
@@ -485,8 +514,9 @@ def main():
     for sample in train_ds.samples:
         combo_counts[sample["label_combo"]] = combo_counts.get(sample["label_combo"], 0) + 1
         gas_counts[sample["label_gas"]] = gas_counts.get(sample["label_gas"], 0) + 1
-    print(f"Train 38类分布: {dict(sorted(combo_counts.items()))}")
-    print(f"Train Gas分布: {dict(sorted(gas_counts.items()))}")
+
+    print(f"训练集 38 类分布: {dict(sorted(combo_counts.items()))}")
+    print(f"训练集 Gas 分布: {dict(sorted(gas_counts.items()))}")
 
     criterion_combo = nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
     criterion_gas = nn.CrossEntropyLoss(label_smoothing=config.label_smoothing)
@@ -521,6 +551,7 @@ def main():
         bb_lr = optimizer.param_groups[0]["lr"]
         mb_lr = optimizer.param_groups[1]["lr"]
         hd_lr = optimizer.param_groups[2]["lr"]
+
         print(f"\nEpoch [{epoch + 1}/{config.num_epochs}] (BB:{bb_lr:.2e}, Mamba:{mb_lr:.2e}, Head:{hd_lr:.2e})")
         print("-" * 60)
 
@@ -551,10 +582,11 @@ def main():
             best_val_acc = val_acc
             best_epoch = epoch + 1
             no_improve = 0
+
             torch.save(
                 {
                     "epoch": epoch,
-                        "model_state_dict": raw_model.state_dict(),
+                    "model_state_dict": raw_model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "scheduler_state_dict": scheduler.state_dict(),
                     "val_acc_combo": val_acc,
@@ -592,7 +624,7 @@ def main():
 
     summary_path = os.path.join(run_dir, "summary.txt")
     with open(summary_path, "w", encoding="utf-8") as f:
-        f.write("38-class dual-branch diff-motion training summary\n")
+        f.write("38 类双分支差分运动训练摘要\n")
         f.write(f"run_name: {run_name}\n")
         f.write(f"total_time_hours: {total_time / 3600:.2f}\n")
         f.write(f"best_val_acc: {best_val_acc:.2f}\n")

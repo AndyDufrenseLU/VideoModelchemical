@@ -1,0 +1,50 @@
+============================================================
+MambaDiffMotion 38-class training config
+run_name: run_combo_diff_20260323_201228_f16_bs8x1_cls38_hlr1e-03
+time: 2026-03-23 20:12:28
+============================================================
+
+attention_dropout: 0.0
+backbone_lr: 3e-05
+batch_size: 8
+combo_loss_weight: 1.0
+compile_model: False
+d_conv: 4
+d_state: 8
+data_root: ./data
+depth: 8
+dropout: 0.0
+embed_dim: 768
+fusion_dropout: 0.1
+gas_aux_loss_weight: 0.3
+grad_accum_steps: 1
+head_dropout: 0.2
+head_lr: 0.001
+img_size: 224
+label_smoothing: 0.05
+mamba_expand: 1
+mamba_lr: 0.0001
+max_images_per_group: None
+mlp_ratio: 4.0
+motion_dim: 128
+motion_head_dropout: 0.25
+motion_input_scale: 3.0
+motion_kernel_size: 3
+motion_residual_weight: 0.35
+num_classes_combo: 38
+num_classes_gas: 19
+num_classes_particle: 3
+num_epochs: 40
+num_frames: 16
+num_heads: 12
+num_workers: 12
+patch_size: 16
+patience: 6
+train_ratio: 0.8
+use_checkpoint: False
+use_class_weights: False
+use_multi_gpu: True
+val_interval: 1
+warmup_epochs: 5
+weight_decay: 0.0005
+effective_batch_size: 8

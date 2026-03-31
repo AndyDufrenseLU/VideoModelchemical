@@ -49,7 +49,6 @@ class MambaSformerComboConfig:
         self.gas_aux_loss_weight = 0.3
         self.num_epochs = 60
         self.warmup_epochs = 5
-        self.patience = 10
         self.val_interval = 1
 
         # Data

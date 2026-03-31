@@ -1,0 +1,33 @@
+38-class dual-branch diff-motion training summary
+run_name: run_combo_diff_20260325_052345_f16_bs8x1_cls38_hlr1e-03
+total_time_hours: 12.47
+best_val_acc: 81.15
+best_epoch: 16
+combo_to_idx: {(0, 0): 0, (0, 10): 1, (0, 11): 2, (0, 12): 3, (0, 14): 4, (0, 2): 5, (0, 4): 6, (0, 5): 7, (0, 7): 8, (0, 8): 9, (1, 0): 10, (1, 10): 11, (1, 11): 12, (1, 12): 13, (1, 14): 14, (1, 2): 15, (1, 4): 16, (1, 5): 17, (1, 7): 18, (1, 8): 19, (2, 0): 20, (2, 9): 21, (2, 10): 22, (2, 11): 23, (2, 12): 24, (2, 13): 25, (2, 14): 26, (2, 15): 27, (2, 16): 28, (2, 17): 29, (2, 18): 30, (2, 1): 31, (2, 2): 32, (2, 3): 33, (2, 4): 34, (2, 5): 35, (2, 6): 36, (2, 8): 37}
+
+001 train_loss=2.6837 train_acc=31.39% val_loss=1.9021 val_acc=50.23%
+002 train_loss=2.0370 train_acc=46.48% val_loss=1.6883 val_acc=56.44%
+003 train_loss=1.8961 train_acc=51.61% val_loss=1.6353 val_acc=58.16%
+004 train_loss=1.7781 train_acc=55.70% val_loss=1.5225 val_acc=61.38%
+005 train_loss=1.7214 train_acc=57.26% val_loss=1.6158 val_acc=61.38%
+006 train_loss=1.5636 train_acc=61.94% val_loss=1.5574 val_acc=62.87%
+007 train_loss=1.4459 train_acc=66.80% val_loss=1.3456 val_acc=69.14%
+008 train_loss=1.3666 train_acc=70.45% val_loss=1.5347 val_acc=66.78%
+009 train_loss=1.3140 train_acc=72.66% val_loss=1.4744 val_acc=67.24%
+010 train_loss=1.2309 train_acc=75.11% val_loss=1.2103 val_acc=74.89%
+011 train_loss=1.1876 train_acc=76.81% val_loss=1.3341 val_acc=71.55%
+012 train_loss=1.1519 train_acc=78.38% val_loss=1.2068 val_acc=76.72%
+013 train_loss=1.0668 train_acc=80.62% val_loss=1.4702 val_acc=71.90%
+014 train_loss=1.0421 train_acc=82.28% val_loss=1.3744 val_acc=74.14%
+015 train_loss=1.0034 train_acc=83.30% val_loss=1.7826 val_acc=66.55%
+016 train_loss=0.9384 train_acc=86.02% val_loss=1.1349 val_acc=81.15%
+017 train_loss=0.9248 train_acc=85.88% val_loss=1.2872 val_acc=77.87%
+018 train_loss=0.9223 train_acc=86.61% val_loss=1.2636 val_acc=77.24%
+019 train_loss=0.8857 train_acc=87.79% val_loss=1.5291 val_acc=72.70%
+020 train_loss=0.8624 train_acc=88.03% val_loss=1.3375 val_acc=77.13%
+021 train_loss=0.8139 train_acc=89.86% val_loss=1.2682 val_acc=79.08%
+022 train_loss=0.8267 train_acc=90.00% val_loss=1.3013 val_acc=79.54%
+023 train_loss=0.7997 train_acc=90.60% val_loss=1.3747 val_acc=78.10%
+024 train_loss=0.7818 train_acc=91.25% val_loss=1.4433 val_acc=77.76%
+025 train_loss=0.7571 train_acc=92.17% val_loss=1.4297 val_acc=78.79%
+026 train_loss=0.7318 train_acc=92.66% val_loss=1.2968 val_acc=80.52%
